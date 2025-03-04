@@ -18,10 +18,6 @@ class Player:
         self.facing_left = False
 
         self.health = 5
- 
-
- 
-
     def handle_input(self):
         """Check and respond to keyboard/mouse input."""
 
@@ -40,11 +36,16 @@ class Player:
             vel_y -= self.speed
         if keys[pygame.K_DOWN]:
             vel_y += self.speed
+        
+        self.x += vel_x
+        self.y += vel_y
 
         # TODO: 3. Clamp player position to screen bounds
-        self.x = min(max(self.x + vel_x, 0 ),app.WIDTH) #set the minimum of the players x axis to their current x position + 
-        self.y = min(max(self.y + vel_y, 0 ),app.HEIGHT)# set the players minimum y position to their current y position + their velocity 
+        self.x = max(0, min(self.x, app.WIDTH)) #set the minimum of the players x axis to their current x position + 
+        self.y = max(0, min(self.y, app.HEIGHT))# set the players minimum y position to their current y position + their velocity 
+        self.rect.center = (self.x, self.y)
         # animation state
+
         if vel_x != 0 or vel_y != 0:
             self.state = "run"
         else:
@@ -59,6 +60,7 @@ class Player:
 
     def update(self):
         self.update_animation()
+
     def update_animation(self):
         self.animation_timer += 1
         if self.animation_timer >= self.animation_speed:
@@ -72,12 +74,12 @@ class Player:
 
 
     def draw(self, surface):
-        """Draw the player on the screen."""
-        # TODO: Draw the image to the given surface at self.rect
-        # For example: surface.blit(self.image, self.rect)
-        pass
+        if self.facing_left:
+            flipped_image = pygame.transform.flip(self.image, True, False)
+            surface.blit(flipped_image, self.rect)
+        else:
+            surface.blit(self.image,self.rect)
 
     def take_damage(self, amount):
-        """Reduce the player's health by a given amount, not going below zero."""
-        # TODO: self.health = max(0, self.health - amount)
-        pass
+        self.health = max(0,self.health - amount)
+        
