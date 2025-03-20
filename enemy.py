@@ -17,32 +17,25 @@ class Enemy:
         self.enemy_type = enemy_type
         self.facing_left = False
 
-        self.knockback_dist_remaining = 0
-        self.knockback_dx = 0
-        self.knockback_dy = 0
-
     def update(self, player):
-        if self.knockback_dist_remaining > 0:
-            self.apply_knockback()
-        else:
-            self.move_toward_player(player)
+        self.move_toward_player(player)
         self.animate()
 
     def move_toward_player(self, player):
         dx = player.x - self.x
         dy = player.y - self.y
-        dist = math.sqrt(dx**2 + dy**2)
+        dist = (dx**2 + dy**2) ** 0.5
+
 
         if dist != 0:
             self.x += (dx / dist) * self.speed
             self.y += (dy / dist) * self.speed
 
-        if dx < 0:
-            self.facing_left = True
-        else:
-            self.facing_left = False
+        self.facing_left = dx < 0
+
 
         self.rect.center = (self.x, self.y)
+        pass
 
     def apply_knockback(self):
         step = min(app.ENEMY_KNOCKBACK_SPEED, self.knockback_dist_remaining)

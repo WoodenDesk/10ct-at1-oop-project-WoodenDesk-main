@@ -17,6 +17,6 @@ class Bullet:
         self.x += self.vx
         self.y += self.vy
         self.rect.center = (self.x, self.y)
-
+        
     def draw(self, surface):
         surface.blit(self.image, self.rect)

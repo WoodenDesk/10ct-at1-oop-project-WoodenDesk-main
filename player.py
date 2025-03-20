@@ -31,12 +31,10 @@ class Player:
         self.bullets = []
 
     def handle_input(self):
-        # TODO: 1. Capture Keyboard Input
         keys = pygame.key.get_pressed()
 
         vel_x, vel_y = 0, 0
 
-        # TODO: 2. Adjust player position with keys pressed...
         if keys[pygame.K_LEFT]:
             # Move character left
             vel_x -= self.speed
@@ -50,18 +48,15 @@ class Player:
         self.x += vel_x
         self.y += vel_y
 
-        # Clamp player position to screen bounds
         self.x = max(0, min(self.x, app.WIDTH))
         self.y = max(0, min(self.y, app.HEIGHT))
         self.rect.center = (self.x, self.y)
 
-        # Determine animation state
         if vel_x != 0 or vel_y != 0:
             self.state = "run"
         else:
             self.state = "idle"
 
-        # Facing direction
         if vel_x < 0:
             self.facing_left = True
         elif vel_x > 0:
@@ -124,7 +119,6 @@ class Player:
 
             bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size)
             self.bullets.append(bullet)
-
         self.shoot_timer = 0
 
     def shoot_toward_mouse(self, pos):
