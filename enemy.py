@@ -4,7 +4,7 @@ import math
 import app
 
 class Enemy:
-    def __init__(self, x, y, enemy_type, enemy_assets, speed=app.DEFAULT_ENEMY_SPEED):
+    def __init__(self, x, y, enemy_type, enemy_assets, speed=app.DEFAULT_ENEMY_SPEED, level=1):
         self.x = x
         self.y = y
         self.speed = speed
@@ -16,10 +16,18 @@ class Enemy:
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.enemy_type = enemy_type
         self.facing_left = False
+        self.knockback_dist_remaining = 0
+        self.knockback_dx = 0
+        self.knockback_dy = 0
+        self.health = int(12 * (1.15 ** (level - 1)))  # Scale health by level
+        self.level = level
 
     def update(self, player):
-        self.move_toward_player(player)
-        self.animate()
+        if self.knockback_dist_remaining > 0:
+            self.apply_knockback()
+        else:
+            self.move_toward_player(player)
+            self.animate()
 
     def move_toward_player(self, player):
         dx = player.x - self.x
@@ -68,6 +76,25 @@ class Enemy:
         else:
             surface.blit(self.image, self.rect)
 
+        # Draw health bar
+        self.draw_health_bar(surface)
+
+    def draw_health_bar(self, surface):
+        """Draw a health bar above the enemy."""
+        bar_width = 40  # Fixed width for health bar
+        bar_height = 5
+        max_health = int(12 * (1.15 ** (1 - 1)))  # Base health
+        health_ratio = self.health / (12 * (1.15 ** (self.level - 1)))  # Current level's max health
+        health_bar_width = int(bar_width * health_ratio)
+
+        # Background bar (red)
+        bar_x = self.rect.centerx - bar_width // 2  # Center the bar
+        bar_y = self.rect.y - bar_height - 2
+        pygame.draw.rect(surface, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+
+        # Foreground bar (green)
+        pygame.draw.rect(surface, (0, 255, 0), (bar_x, bar_y, health_bar_width, bar_height))
+
     def set_knockback(self, px, py, dist):
         dx = self.x - px
         dy = self.y - py
@@ -76,3 +103,10 @@ class Enemy:
             self.knockback_dx = dx / length
             self.knockback_dy = dy / length
             self.knockback_dist_remaining = dist
+
+    def take_damage(self, amount):
+        """Reduce enemy health by the given amount."""
+        self.health -= amount
+        if self.health <= 0:
+            return True  # Enemy is dead
+        return False  # Enemy is still alive
