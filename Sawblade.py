@@ -82,7 +82,7 @@ class Sawblade:
         collided_enemies = []
         for enemy in enemies:
             if self.rect.colliderect(enemy.rect):
-                if enemy.take_damage(self.damage):
+                if enemy.take_damage(self.damage): 
                     collided_enemies.append(enemy)
         return collided_enemies
 

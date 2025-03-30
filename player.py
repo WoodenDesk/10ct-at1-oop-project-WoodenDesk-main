@@ -5,6 +5,7 @@ import os
 
 from bullet import Bullet
 from Sawblade import Sawblade  # Import the Sawblade class
+from LightningStaff import LightningStaff
 
 class Player:
     def __init__(self, x, y, assets, weapon_choice):
@@ -41,6 +42,8 @@ class Player:
         if self.weapon_choice == "sawblade":
             self.sawblade = Sawblade(self.x, self.y)  # Main sawblade
             self.sawblades = [self.sawblade]  # List to hold all sawblades
+        elif self.weapon_choice == "lightning":
+            self.lightning_staff = LightningStaff(self.x, self.y)
         else:
             self.sawblade = None
 
@@ -142,6 +145,8 @@ class Player:
                 if blade.is_orbiting:
                     blade.set_parent_position(main_blade.x, main_blade.y)
                 blade.update()
+        elif self.weapon_choice == "lightning":
+            self.lightning_staff.update(self.x, self.y, self.enemies)
 
     def add_orbiting_sawblade(self):
         if self.weapon_choice == "sawblade":
@@ -174,6 +179,9 @@ class Player:
         if self.weapon_choice == "sawblade":
             for blade in self.sawblades:
                 blade.draw(surface)
+
+        elif self.weapon_choice == "lightning":
+            self.lightning_staff.draw(surface)
 
     def take_damage(self, amount):
         self.health = max(0, self.health - amount)

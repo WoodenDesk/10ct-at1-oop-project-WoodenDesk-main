@@ -33,7 +33,7 @@ class Game:
         self.running = True
         self.game_over = False
 
-        self.enemies = []
+        self.enemies = []  # List to store enemies
         self.enemy_spawn_timer = 0
         self.enemy_spawn_interval = 30 
         self.enemies_per_spawn = 2
@@ -106,12 +106,16 @@ class Game:
             # Options with updated descriptions
             bullet_text = "1. Bullet - Shoot with mouse/spacebar"
             sawblade_text = "2. Sawblade - Control with WASD"
+            lightning_text = "3. Lightning Staff - Chain lightning between enemies"
             bullet_surf = self.font_small.render(bullet_text, True, (255, 255, 255))
             sawblade_surf = self.font_small.render(sawblade_text, True, (255, 255, 255))
-            bullet_rect = bullet_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 - 20))
-            sawblade_rect = sawblade_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 + 20))
+            lightning_surf = self.font_small.render(lightning_text, True, (255, 255, 255))
+            bullet_rect = bullet_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 - 40))
+            sawblade_rect = sawblade_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2))
+            lightning_rect = lightning_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 + 40))
             self.screen.blit(bullet_surf, bullet_rect)
             self.screen.blit(sawblade_surf, sawblade_rect)
+            self.screen.blit(lightning_surf, lightning_rect)
 
             pygame.display.flip()
 
@@ -124,6 +128,8 @@ class Game:
                         self.weapon_choice = "bullet"
                     elif event.key == pygame.K_2:
                         self.weapon_choice = "sawblade"
+                    elif event.key == pygame.K_3:
+                        self.weapon_choice = "lightning"
                         
             self.clock.tick(30)  # Limit FPS for weapon selection screen
             
@@ -183,16 +189,24 @@ class Game:
         self.player.handle_input()
         self.player.update()
 
+        # Move enemies to a list to be removed to avoid modifying list while iterating
+        enemies_to_remove = []
+        
         if self.weapon_choice == "sawblade":
-            # Check collisions for all sawblades
             for sawblade in self.player.sawblades:
                 collided_enemies = sawblade.check_collision(self.enemies)
-                for enemy in collided_enemies:
-                    if enemy in self.enemies:  # Ensure the enemy still exists
-                        self.enemies.remove(enemy)
-                        new_coin = Coin(enemy.x, enemy.y)
-                        self.coins.append(new_coin)
-                        self.sounds["enemy_death"].play()
+                enemies_to_remove.extend(collided_enemies)
+        elif self.weapon_choice == "lightning":
+            killed_enemies = self.player.lightning_staff.check_collision(self.enemies)
+            enemies_to_remove.extend(killed_enemies)
+        
+        # Remove dead enemies and spawn coins
+        for enemy in enemies_to_remove:
+            if enemy in self.enemies:  # Check if enemy still exists
+                self.enemies.remove(enemy)
+                new_coin = Coin(enemy.x, enemy.y)
+                self.coins.append(new_coin)
+                self.sounds["enemy_death"].play()
 
         for enemy in self.enemies:
             enemy.update(self.player)
@@ -286,15 +300,15 @@ class Game:
         return nearest
 
     def check_bullet_enemy_collisions(self):
-        for bullet in self.player.bullets[:]:  # Iterate over a copy of the list
-            for enemy in self.enemies:
+        for bullet in self.player.bullets[:]:
+            for enemy in self.enemies[:]:  # Create a copy to safely modify
                 if bullet.rect.colliderect(enemy.rect):
-                    if enemy.take_damage(bullet.damage):  # Enemy dies only if health reaches 0
+                    if enemy.take_damage(bullet.damage):  # Enemy dies
+                        self.enemies.remove(enemy)
                         new_coin = Coin(enemy.x, enemy.y)
                         self.coins.append(new_coin)
-                        self.enemies.remove(enemy)
                         self.sounds["enemy_death"].play()
-                    if bullet in self.player.bullets and not bullet.bounces:  # Only remove non-bouncing bullets
+                    if bullet in self.player.bullets and not bullet.bounces:
                         self.player.bullets.remove(bullet)
                     break
 
@@ -323,7 +337,7 @@ class Game:
                 {"name": "Bouncy Bullets", "desc": "Bullets bounce off screen edges"},
                 {"name": "Triple Shot", "desc": "Fire three spread shots"},
             ]
-        else:  # sawblade upgrades
+        elif self.weapon_choice == "sawblade":
             possible_upgrades = [
                 {"name": "Larger Sawblade", "desc": "Increase sawblade size"},
                 {"name": "Sharper Sawblade", "desc": "Increase damage +2"},
@@ -333,6 +347,15 @@ class Game:
                 {"name": "Wider Orbit", "desc": "Increase orbit radius"},
                 {"name": "Tighter Orbit", "desc": "Decrease orbit radius"},
                 {"name": "Faster Orbit", "desc": "Orbital speed +20%"},
+            ]
+        elif self.weapon_choice == "lightning":
+            possible_upgrades = [
+                {"name": "Chain Lightning", "desc": "Lightning jumps to +1 enemy"},
+                {"name": "Lightning Range", "desc": "Increase chain distance"},
+                {"name": "Lightning Power", "desc": "Increase damage +2"},
+                {"name": "Quick Zap", "desc": "Reduce cooldown"},
+                {"name": "Wide Arc", "desc": "Increase targeting range"},
+                {"name": "Thunder Strike", "desc": "Double damage to first target"},
             ]
         return random.sample(possible_upgrades, k=min(num, len(possible_upgrades)))
 
@@ -360,7 +383,7 @@ class Game:
             elif name == "Triple Shot":
                 player.bullet_count = max(3, player.bullet_count)
                 player.bullet_spread = max(20, player.bullet_spread)
-        else:  # sawblade upgrades
+        elif self.weapon_choice == "sawblade":
             if name == "Larger Sawblade":
                 for blade in player.sawblades:
                     blade.size += 10
@@ -392,6 +415,17 @@ class Game:
                 for blade in player.sawblades:
                     if blade.is_orbiting:
                         blade.orbit_speed *= 1.2
+        elif self.weapon_choice == "lightning":
+            if name == "Chain Lightning":
+                player.lightning_staff.chain_count += 1
+            elif name == "Lightning Range":
+                player.lightning_staff.chain_range += 50
+            elif name == "Lightning Power":
+                player.lightning_staff.damage += 2
+            elif name == "Quick Zap":
+                player.lightning_staff.zap_cooldown = max(10, player.lightning_staff.zap_cooldown - 5)
+            elif name == "Thunder Strike":
+                player.lightning_staff.damage *= 2
 
     def draw_upgrade_menu(self):
         # Dark overlay behind the menu

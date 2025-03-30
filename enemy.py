@@ -19,7 +19,8 @@ class Enemy:
         self.knockback_dist_remaining = 0
         self.knockback_dx = 0
         self.knockback_dy = 0
-        self.health = int(12 * (1.15 ** (level - 1)))  # Scale health by level
+        self.max_health = int(12 * (1.15 ** (level - 1)))  # Store max health
+        self.health = self.max_health  # Set initial health to max
         self.level = level
 
     def update(self, player):
@@ -34,13 +35,11 @@ class Enemy:
         dy = player.y - self.y
         dist = (dx**2 + dy**2) ** 0.5
 
-
         if dist != 0:
             self.x += (dx / dist) * self.speed
             self.y += (dy / dist) * self.speed
 
         self.facing_left = dx < 0
-
 
         self.rect.center = (self.x, self.y)
         pass
@@ -83,8 +82,7 @@ class Enemy:
         """Draw a health bar above the enemy."""
         bar_width = 40  # Fixed width for health bar
         bar_height = 5
-        max_health = int(12 * (1.15 ** (1 - 1)))  # Base health
-        health_ratio = self.health / (12 * (1.15 ** (self.level - 1)))  # Current level's max health
+        health_ratio = self.health / self.max_health  # Use max_health instead of recalculating
         health_bar_width = int(bar_width * health_ratio)
 
         # Background bar (red)
@@ -106,7 +104,5 @@ class Enemy:
 
     def take_damage(self, amount):
         """Reduce enemy health by the given amount."""
-        self.health -= amount
-        if self.health <= 0:
-            return True  # Enemy is dead
-        return False  # Enemy is still alive
+        self.health = max(0, self.health - amount)  # Prevent negative health
+        return self.health <= 0  # Return True if enemy should die
