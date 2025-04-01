@@ -37,7 +37,7 @@ class Sawblade:
         self.image = self.original_image
         self.rect = self.image.get_rect(center=(self.x, self.y))
 
-        self.rotation_speed = 25  
+        self.rotation_speed = 26
 
     def apply_movement(self, dx, dy):
         # Add to velocity based on input

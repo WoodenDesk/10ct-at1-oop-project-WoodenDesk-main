@@ -5,28 +5,28 @@ import app
 
 class Enemy:
     def __init__(self, x, y, enemy_type, enemy_assets, speed=app.DEFAULT_ENEMY_SPEED, level=1):
-        # Position and movement
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.facing_left = False
+        # Core position attributes
+        self.x = x  # X position in game world
+        self.y = y  # Y position in game world
+        self.speed = speed  # Movement speed
+        self.facing_left = False  # Direction enemy is facing
         
-        # Animation properties
-        self.frames = enemy_assets[enemy_type]
-        self.frame_index = 0
-        self.animation_timer = 0
-        self.animation_speed = 8
-        self.image = self.frames[self.frame_index]
-        self.rect = self.image.get_rect(center=(self.x, self.y))
+        # Animation setup
+        self.frames = enemy_assets[enemy_type]  # List of sprite frames
+        self.frame_index = 0  # Current frame being shown
+        self.animation_timer = 0  # Time until next frame
+        self.animation_speed = 8  # Frames between animation updates
+        self.image = self.frames[self.frame_index]  # Current sprite
+        self.rect = self.image.get_rect(center=(self.x, self.y))  # Collision box
         
-        # Combat properties
-        self.max_health = int(12 * (1.15 ** (level - 1)))
+        # Stats
+        self.max_health = int(12 * (1.15 ** (level - 1)))  # Health scales with level
         self.health = self.max_health
         self.level = level
         
-        # Knockback properties
-        self.knockback_dist_remaining = 0
-        self.knockback_dx = self.knockback_dy = 0
+        # Knockback system
+        self.knockback_dist_remaining = 0  # Distance left to move when hit
+        self.knockback_dx = self.knockback_dy = 0  # Knockback direction 
 
     def update(self, player):
         # Handle movement (knockback or chase player)
@@ -37,16 +37,21 @@ class Enemy:
         self.animate()
 
     def move_toward_player(self, player):
-        dx = player.x - self.x
-        dy = player.y - self.y
-        dist = (dx**2 + dy**2) ** 0.5
+        # Calculate direction to player
+        dx = player.x - self.x  # X distance to player
+        dy = player.y - self.y  # Y distance to player
+        dist = (dx**2 + dy**2) ** 0.5  # Total distance to player
 
+        # Update position if not at player
         if dist != 0:
-            self.x += (dx / dist) * self.speed
-            self.y += (dy / dist) * self.speed
+            self.x += (dx / dist) * self.speed  
+            self.y += (dy / dist) * self.speed 
 
-        self.facing_left = dx < 0
 
+        # Face the correct direction
+        self.facing_left = dx < 0  # Face left if player is to the left
+
+        # Update collision box position
         self.rect.center = (self.x, self.y)
 
     def apply_knockback(self):
@@ -84,7 +89,6 @@ class Enemy:
         self.draw_health_bar(surface)
 
     def draw_health_bar(self, surface):
-        """Draw a health bar above the enemy."""
         bar_width = 40  # Fixed width for health bar
         bar_height = 5
         health_ratio = self.health / self.max_health  # Use max_health instead of recalculating

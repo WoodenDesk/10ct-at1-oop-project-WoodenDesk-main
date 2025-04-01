@@ -82,12 +82,12 @@ class Game:
     def run(self):
         while self.running:
             if self.weapon_choice is None:
-                self.show_weapon_selection_screen()
+                self.show_weapon_selection_screen() # if no weapon yet, show the selection screen
             else:
-                self.clock.tick(app.FPS)
+                self.clock.tick(app.FPS) # Limit FPS
                 self.handle_events()
 
-                if not self.game_over and not self.in_level_up_menu:
+                if not self.game_over and not self.in_level_up_menu: # Update game state only if not in level up menu
                     self.update()
 
                 self.draw()
@@ -103,11 +103,11 @@ class Game:
             title_rect = title_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 3 - 50))
             self.screen.blit(title_surf, title_rect)
 
-            # Options with updated descriptions
+            # Options with  descriptions
             bullet_text = "1. Bullet - Shoot with mouse/spacebar"
             sawblade_text = "2. Sawblade - Control with WASD"
             lightning_text = "3. Lightning Staff - Chain lightning between enemies"
-            bullet_surf = self.font_small.render(bullet_text, True, (255, 255, 255))
+            bullet_surf = self.font_small.render(bullet_text, True, (255, 255, 255)) 
             sawblade_surf = self.font_small.render(sawblade_text, True, (255, 255, 255))
             lightning_surf = self.font_small.render(lightning_text, True, (255, 255, 255))
             bullet_rect = bullet_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 - 40))
@@ -119,11 +119,11 @@ class Game:
 
             pygame.display.flip()
 
-            for event in pygame.event.get():
+            for event in pygame.event.get(): # Handle events
                 if event.type == pygame.QUIT:
                     self.running = False
                     return
-                elif event.type == pygame.KEYDOWN:
+                elif event.type == pygame.KEYDOWN: # Check for key presses
                     if event.key == pygame.K_1:
                         self.weapon_choice = "bullet"
                     elif event.key == pygame.K_2:
@@ -135,37 +135,41 @@ class Game:
             
         self.reset_game()  # Reset game with the chosen weapon
 
-    def handle_events(self):
-        for event in pygame.event.get():
+    def handle_events(self): 
+        for event in pygame.event.get(): # if event is quit, exit the game
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN: # Check for key presses
                 if self.game_over:
                     if event.key == pygame.K_r:
                         self.reset_game()
-                    elif event.key == pygame.K_ESCAPE:
+                    elif event.key == pygame.K_ESCAPE: # Quit the game
                         self.running = False
                 elif self.in_level_up_menu:  # only runs in the upgrade menu
-                    if event.key in [pygame.K_1, pygame.K_2, pygame.K_3]:
+                    if event.key in [pygame.K_1, pygame.K_2, pygame.K_3]:# Check for number keys for upgrades
                         index = event.key - pygame.K_1  
                         if 0 <= index < len(self.upgrade_options):
                             upgrade = self.upgrade_options[index]
                             self.apply_upgrade(self.player, upgrade)
                             self.in_level_up_menu = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+                elif event.key == pygame.K_l and not self.game_over:  # Debug: Press L to level up
+                    self.player.xp = self.player.level * self.player.level * 5  # Set XP to trigger level up
+                    self.check_for_level_up()
+            elif event.type == pygame.MOUSEBUTTONDOWN: # Check for mouse button presses to shoot
                 if self.weapon_choice == "bullet" and event.button == 1:  # Left mouse button
                     self.player.shoot_toward_mouse(event.pos)  # Shoot bullets
                     self.sounds["shoot"].play()
 
             
-    def spawn_enemies(self):
+    def spawn_enemies(self): # Spawn enemies at random positions
         self.enemy_spawn_timer += 1
         if self.enemy_spawn_timer >= self.enemy_spawn_interval:
             self.enemy_spawn_timer = 0
 
-            for _ in range(self.enemies_per_spawn):
+            for _ in range(self.enemies_per_spawn):  # Spawn multiple enemies
                 side = random.choice(["top", "bottom", "left", "right"])
-                if side == "top":
+                # Randomly choose a side to spawn the enemy
+                if side == "top": 
                     x = random.randint(0, app.WIDTH)
                     y = -app.SPAWN_MARGIN
                 elif side == "bottom":
@@ -177,26 +181,25 @@ class Game:
                 else:
                     x = app.WIDTH + app.SPAWN_MARGIN
                     y = random.randint(0, app.HEIGHT)
-
-                enemy_type = random.choice(list(self.assets["enemies"].keys()))
-                print(f"Enemy type: {enemy_type}")
-                enemy = Enemy(x, y, enemy_type, self.assets["enemies"], level=self.player.level)
+                enemy_type = random.choice(list(self.assets["enemies"].keys())) # Randomly select enemy type
+                print(f"Enemy type: {enemy_type}") # Debugging line
+                enemy = Enemy(x, y, enemy_type, self.assets["enemies"], level=self.player.level) # Create enemy instance
                 self.enemies.append(enemy)
             
-    def update(self):
+    def update(self): # Update game state
+        #execute player actions and other game events
         self.player.enemies = self.enemies
-        
         self.player.handle_input()
         self.player.update()
 
         # Move enemies to a list to be removed to avoid modifying list while iterating
         enemies_to_remove = []
         
-        if self.weapon_choice == "sawblade":
+        if self.weapon_choice == "sawblade": # Check for sawblade collisions when sawblade is selected
             for sawblade in self.player.sawblades:
                 collided_enemies = sawblade.check_collision(self.enemies)
                 enemies_to_remove.extend(collided_enemies)
-        elif self.weapon_choice == "lightning":
+        elif self.weapon_choice == "lightning": #check for lightning staff collisions when selected
             killed_enemies = self.player.lightning_staff.check_collision(self.enemies)
             if killed_enemies:
                 self.sounds["lightning"].play()
@@ -212,59 +215,59 @@ class Game:
 
         for enemy in self.enemies:
             enemy.update(self.player)
-
+        # Check for collisions between player and enemies speciffically bullets and enemies
         self.check_player_enemy_collisions()
         self.check_bullet_enemy_collisions()
         self.check_player_coin_collisions()
 
-        if self.player.health <= 0:
+        if self.player.health <= 0: # Check if player is dead
             self.game_over = True
             return
 
         self.spawn_enemies()
         self.check_for_level_up()  # Call the method here
 
-    def draw(self):
+    def draw(self): #draw game elements
         self.screen.blit(self.background, (0, 0))
 
-        for coin in self.coins:
+        for coin in self.coins: # Draw coins
             coin.draw(self.screen)
 
-        if not self.game_over:
+        if not self.game_over: # Draw player and weapon
             self.player.draw(self.screen)
             if self.weapon_choice == "sawblade" and self.player.sawblade:
                 self.player.sawblade.draw(self.screen)  # Draw the sawblade only if selected
 
-        for enemy in self.enemies:
+        for enemy in self.enemies: # Draw enemies
             enemy.draw(self.screen)
 
-        if self.in_level_up_menu:
+        if self.in_level_up_menu: # Draw the upgrade menu
             self.draw_upgrade_menu()
 
-        hp = max(0, min(self.player.health, 20))
+        hp = max(0, min(self.player.health, 20)) # Clamp health to valid range
         health_img = self.assets["health"][hp]
         self.screen.blit(health_img, (10, 10))
 
-        xp_text_surf = self.font_small.render(f"XP: {self.player.xp}", True, (255, 255, 255))
+        xp_text_surf = self.font_small.render(f"XP: {self.player.xp}", True, (255, 255, 255)) # Display XP
         self.screen.blit(xp_text_surf, (10, 70))
-        next_level_xp = self.player.level * self.player.level * 5
+        next_level_xp = self.player.level * self.player.level * 5 # Calculate XP needed for next level
         xp_to_next = max(0, next_level_xp - self.player.xp)
-        xp_next_surf = self.font_small.render(f"Next Lvl XP: {xp_to_next}", True, (255, 255, 255))
+        xp_next_surf = self.font_small.render(f"Next Lvl XP: {xp_to_next}", True, (255, 255, 255)) # Display XP needed for next level
         self.screen.blit(xp_next_surf, (10, 100))
 
         if self.game_over:
             self.draw_game_over_screen()
 
-        pygame.display.flip()
+        pygame.display.flip() # Update the display
 
-    def check_player_enemy_collisions(self):
+    def check_player_enemy_collisions(self): # Check for collisions between player and enemies
         collided = False
         for enemy in self.enemies:
-            if enemy.rect.colliderect(self.player.rect):
+            if enemy.rect.colliderect(self.player.rect): # if enemy collides with player collision is true
                 collided = True
                 break
 
-        if collided:
+        if collided: # If player collides with enemy, apply knockback and take damage
             self.player.take_damage(1)
             if self.player.health <= 0:
                 self.sounds["game_over"].play()  # Play game over sound
@@ -288,20 +291,20 @@ class Game:
         prompt_rect = prompt_surf.get_rect(center=(app.WIDTH // 2, app.HEIGHT // 2 + 20))
         self.screen.blit(prompt_surf, prompt_rect)
 
-    def find_nearest_enemy(self):
+    def find_nearest_enemy(self): # Find the nearest enemy to the player
         if not self.enemies:
             return None
         nearest = None
         min_dist = float('inf')
         px, py = self.player.x, self.player.y
-        for enemy in self.enemies:
+        for enemy in self.enemies: # calculate distance to each enemy
             dist = math.sqrt((enemy.x - px)**2 + (enemy.y - py)**2)
             if dist < min_dist:
                 min_dist = dist
                 nearest = enemy
         return nearest
 
-    def check_bullet_enemy_collisions(self):
+    def check_bullet_enemy_collisions(self): # Check for collisions between bullets and enemies
         for bullet in self.player.bullets[:]:
             for enemy in self.enemies[:]:  # Create a copy to safely modify
                 if bullet.rect.colliderect(enemy.rect):
@@ -311,7 +314,7 @@ class Game:
                         self.coins.append(new_coin)
                         self.sounds["enemy_death"].play()
 
-    def check_player_coin_collisions(self):
+    def check_player_coin_collisions(self):# Check for collisions between player and coins
         coins_collected = []
         for coin in self.coins:
             if coin.rect.colliderect(self.player.rect):
@@ -322,7 +325,7 @@ class Game:
             if c in self.coins:
                 self.coins.remove(c)
 
-    def pick_random_upgrades(self, num):
+    def pick_random_upgrades(self, num): # Pick random upgrades based on the weapon choice
         if self.weapon_choice == "bullet":
             possible_upgrades = [
                 {"name": "Bigger Bullet", "desc": "Bullet size +5"},
@@ -335,7 +338,7 @@ class Game:
                 {"name": "Heavy Bullets", "desc": "Double damage, slower speed"},
                 {"name": "Triple Shot", "desc": "Fire three spread shots"},
             ]
-        elif self.weapon_choice == "sawblade":
+        elif self.weapon_choice == "sawblade": 
             possible_upgrades = [
                 {"name": "Larger Sawblade", "desc": "Increase sawblade size"},
                 {"name": "Sharper Sawblade", "desc": "Increase damage +2"},
@@ -346,7 +349,7 @@ class Game:
                 {"name": "Tighter Orbit", "desc": "Decrease orbit radius"},
                 {"name": "Faster Orbit", "desc": "Orbital speed +20%"},
             ]
-        elif self.weapon_choice == "lightning":
+        elif self.weapon_choice == "lightning": 
             possible_upgrades = [
                 {"name": "Lightning Targets", "desc": f"Chain to +1 enemy (Current: {self.player.lightning_staff.current_chain_count()})", 
                  "type": "targets"},
@@ -365,7 +368,8 @@ class Game:
             ]
         return random.sample(possible_upgrades, k=min(num, len(possible_upgrades)))
 
-    def apply_upgrade(self, player, upgrade):
+    def apply_upgrade(self, player, upgrade): #apply the selected upgrade to the player
+        # every upgrade has a name and description and the code inside the if statements change variables
         name = upgrade["name"]
         if self.weapon_choice == "bullet":
             if name == "Bigger Bullet":
@@ -422,10 +426,10 @@ class Game:
                     if blade.is_orbiting:
                         blade.orbit_speed *= 1.2
         elif self.weapon_choice == "lightning":
-            if upgrade["type"] in player.lightning_staff.upgrades:
+            if upgrade["type"] in player.lightning_staff.upgrades: #apply the upgrade to the lightning staff
                 player.lightning_staff.upgrade(upgrade["type"])
 
-    def draw_upgrade_menu(self):
+    def draw_upgrade_menu(self): # Draw the upgrade menu
         # Dark overlay behind the menu
         overlay = pygame.Surface((app.WIDTH, app.HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
@@ -444,7 +448,7 @@ class Game:
             option_rect = option_surf.get_rect(center=(app.WIDTH // 2, line_y))
             self.screen.blit(option_surf, option_rect)
 
-    def check_for_level_up(self):
+    def check_for_level_up(self): # Check if player has enough XP to level up
         xp_needed = self.player.level * self.player.level * 5
         if self.player.xp >= xp_needed:
             # Leveled up

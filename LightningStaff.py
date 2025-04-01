@@ -40,12 +40,13 @@ class LightningStaff:
         pygame.draw.circle(self.image, (100, 200, 255), (self.size * 1.5, self.size * 1.5), self.size // 2)
         self.rect = self.image.get_rect(center=(self.x, self.y))
 
-    def get_upgrade_value(self, upgrade_type):
+    def get_upgrade_value(self, upgrade_type): 
         if upgrade_type in self.upgrades:
             upgrade = self.upgrades[upgrade_type]
             return upgrade['base'] + (upgrade['increment'] * upgrade['level'])
         return 0
-
+    # I decided to handle upgrades in a more easy way however this may reduce modularity but I figured the lightning staff was rather specific, 
+    # unlike the generic bullet and moving weapon
     def current_damage(self):
         return self.get_upgrade_value('damage')
 
@@ -70,7 +71,7 @@ class LightningStaff:
     def mini_staff_duration(self):
         return self.get_upgrade_value('mini_duration')
 
-    def upgrade(self, upgrade_type):
+    def upgrade(self, upgrade_type): # Upgrade the staff and check if it can be upgraded
         if upgrade_type in self.upgrades:
             upgrade = self.upgrades[upgrade_type]
             if upgrade['level'] < upgrade['max']:
@@ -78,14 +79,14 @@ class LightningStaff:
                 return True
         return False
 
-    def update(self, player_x, player_y, enemies):
+    def update(self, player_x, player_y, enemies): # Update staff position and check for collisions
         self.x = player_x
         self.y = player_y
         self.rect.center = (self.x, self.y)
 
         if self.zap_timer > 0:
             self.zap_timer -= 1
-        elif len(self.current_targets) > 0:
+        elif len(self.current_targets) > 0: # Reset targets
             self.current_targets = []
 
         # Update mini-staffs
@@ -94,7 +95,7 @@ class LightningStaff:
             if mini[2] <= 0:
                 self.mini_staffs.remove(mini)
 
-    def check_collision(self, enemies):
+    def check_collision(self, enemies): # Check for enemy collisions
         if not self.active or self.zap_timer > 0:
             return []
 
@@ -104,17 +105,17 @@ class LightningStaff:
         self.current_targets = targets
         self.zap_timer = self.current_cooldown()
 
-        for enemy in targets:
+        for enemy in targets: # Check for each target 
             if enemy in enemies:
                 if enemy.take_damage(self.current_damage()):
                     collided_enemies.append(enemy)
-                    if len(self.mini_staffs) < self.max_mini_staffs() and random.random() < self.mini_staff_spawn_chance():
-                        self.mini_staffs.append([enemy.x, enemy.y, self.mini_staff_duration()])
+                    if len(self.mini_staffs) < self.max_mini_staffs() and random.random() < self.mini_staff_spawn_chance(): # Chance to spawn mini-staff
+                        self.mini_staffs.append([enemy.x, enemy.y, self.mini_staff_duration()]) # Spawn mini-staff with duration
 
         # Mini-staffs damage and targets
         mini_staff_targets = {}
         for mini in self.mini_staffs:
-            mini_targets = self.find_multiple_targets(enemies, (mini[0], mini[1]))
+            mini_targets = self.find_multiple_targets(enemies, (mini[0], mini[1])) 
             mini_staff_targets[tuple(mini)] = mini_targets
             for enemy in mini_targets:
                 if enemy in enemies:
@@ -124,7 +125,7 @@ class LightningStaff:
         self.mini_staff_targets = mini_staff_targets
         return collided_enemies
 
-    def find_multiple_targets(self, enemies, start_pos):
+    def find_multiple_targets(self, enemies, start_pos): #  Find multiple targets in range
         if not enemies: # mainly for the very start as this caused a crash 
             return []
 
@@ -133,13 +134,13 @@ class LightningStaff:
         available_enemies = enemies.copy()
         range_limit = self.get_upgrade_value('range')
 
-        while len(targets) < max_targets and available_enemies:
+        while len(targets) < max_targets and available_enemies: #targets are less than the maximum targets and available enemies find and add enemies to the list
             nearest = None
             nearest_dist = range_limit
 
-            for enemy in available_enemies:
+            for enemy in available_enemies: # Check distance to each enemy
                 dist = math.sqrt((enemy.x - start_pos[0])**2 + (enemy.y - start_pos[1])**2)
-                if dist < nearest_dist:
+                if dist < nearest_dist: # within range
                     nearest = enemy
                     nearest_dist = dist
 
