@@ -32,7 +32,6 @@ class Player:
         self.bullet_count = 1
         self.bullet_spread = 10  # Angle spread between bullets
         self.bullet_damage = 6  # Changed from 1 to 6
-        self.bullet_bounces = False
         self.shoot_cooldown = 20
         self.shoot_timer = 0
         self.bullets = []
@@ -146,7 +145,7 @@ class Player:
                     blade.set_parent_position(main_blade.x, main_blade.y)
                 blade.update()
         elif self.weapon_choice == "lightning":
-            self.lightning_staff.update(self.x, self.y, self.enemies)
+            self.lightning_staff.update(self.x, self.y, self.enemies)  # Just update position and enemies
 
     def add_orbiting_sawblade(self):
         if self.weapon_choice == "sawblade":
@@ -212,7 +211,7 @@ class Player:
             final_vy = math.sin(angle) * self.bullet_speed
 
             bullet = Bullet(self.x, self.y, final_vx, final_vy, self.bullet_size, 
-                            bounces=self.bullet_bounces, damage=self.bullet_damage)
+                            damage=self.bullet_damage)
             self.bullets.append(bullet)
         self.shoot_timer = 0
 

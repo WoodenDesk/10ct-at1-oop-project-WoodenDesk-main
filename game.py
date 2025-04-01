@@ -47,12 +47,14 @@ class Game:
             "shoot": pygame.mixer.Sound(os.path.join("assets", "shoot.wav")),
             "enemy_death": pygame.mixer.Sound(os.path.join("assets", "enemy_death.wav")),
             "level_up": pygame.mixer.Sound(os.path.join("assets", "level_up.wav")),
-            "game_over": pygame.mixer.Sound(os.path.join("assets", "death.wav")), 
+            "game_over": pygame.mixer.Sound(os.path.join("assets", "death.wav")),
+            "lightning": pygame.mixer.Sound(os.path.join("assets", "lightning.wav")),
         }
         self.sounds["shoot"].set_volume(0.5)  # Adjust volume (optional)
         self.sounds["enemy_death"].set_volume(0.5)
         self.sounds["level_up"].set_volume(0.7)
         self.sounds["game_over"].set_volume(0.7)  
+        self.sounds["lightning"].set_volume(0.4)  # Lower volume for lightning
         self.weapon_choice = None  # Store the player's weapon choice
 
     def reset_game(self):
@@ -69,8 +71,6 @@ class Game:
         bg = pygame.Surface((width, height))  
         tile_w = floor_tiles[0].get_width()
         tile_h = floor_tiles[0].get_height()  
-        tile_w = floor_tiles[0].get_width()
-        tile_h = floor_tiles[0].get_height()
 
         for y in range(0, height, tile_h):
             for x in range(0, width, tile_w):
@@ -198,6 +198,8 @@ class Game:
                 enemies_to_remove.extend(collided_enemies)
         elif self.weapon_choice == "lightning":
             killed_enemies = self.player.lightning_staff.check_collision(self.enemies)
+            if killed_enemies:
+                self.sounds["lightning"].play()
             enemies_to_remove.extend(killed_enemies)
         
         # Remove dead enemies and spawn coins
@@ -308,9 +310,6 @@ class Game:
                         new_coin = Coin(enemy.x, enemy.y)
                         self.coins.append(new_coin)
                         self.sounds["enemy_death"].play()
-                    if bullet in self.player.bullets and not bullet.bounces:
-                        self.player.bullets.remove(bullet)
-                    break
 
     def check_player_coin_collisions(self):
         coins_collected = []
@@ -334,7 +333,6 @@ class Game:
                 {"name": "Tighter Spread", "desc": "Decrease bullet spread"},
                 {"name": "Rapid Fire", "desc": "Much faster shooting -40% damage"},
                 {"name": "Heavy Bullets", "desc": "Double damage, slower speed"},
-                {"name": "Bouncy Bullets", "desc": "Bullets bounce off screen edges"},
                 {"name": "Triple Shot", "desc": "Fire three spread shots"},
             ]
         elif self.weapon_choice == "sawblade":
@@ -350,12 +348,20 @@ class Game:
             ]
         elif self.weapon_choice == "lightning":
             possible_upgrades = [
-                {"name": "Chain Lightning", "desc": "Lightning jumps to +1 enemy"},
-                {"name": "Lightning Range", "desc": "Increase chain distance"},
-                {"name": "Lightning Power", "desc": "Increase damage +2"},
-                {"name": "Quick Zap", "desc": "Reduce cooldown"},
-                {"name": "Wide Arc", "desc": "Increase targeting range"},
-                {"name": "Thunder Strike", "desc": "Double damage to first target"},
+                {"name": "Lightning Targets", "desc": f"Chain to +1 enemy (Current: {self.player.lightning_staff.current_chain_count()})", 
+                 "type": "targets"},
+                {"name": "Lightning Range", "desc": f"Chain range +50 (Current: {self.player.lightning_staff.current_chain_range()})", 
+                 "type": "range"},
+                {"name": "Lightning Power", "desc": f"Damage +2 (Current: {self.player.lightning_staff.current_damage()})", 
+                 "type": "damage"},
+                {"name": "Mini-Staff Slots", "desc": f"Max mini-staffs +1 (Current: {self.player.lightning_staff.max_mini_staffs()})", 
+                 "type": "mini_count"},
+                {"name": "Spawn Chance", "desc": f"Mini-staff spawn +15% (Current: {int(self.player.lightning_staff.mini_staff_spawn_chance()*100)}%)", 
+                 "type": "mini_chance"},
+                {"name": "Mini-Staff Power", "desc": f"Mini damage +20% (Current: {int(self.player.lightning_staff.mini_staff_damage_mult()*100)}%)", 
+                 "type": "mini_damage"},
+                {"name": "Duration", "desc": f"Mini duration +2s (Current: {self.player.lightning_staff.mini_staff_duration()//60}s)", 
+                 "type": "mini_duration"},
             ]
         return random.sample(possible_upgrades, k=min(num, len(possible_upgrades)))
 
@@ -416,16 +422,8 @@ class Game:
                     if blade.is_orbiting:
                         blade.orbit_speed *= 1.2
         elif self.weapon_choice == "lightning":
-            if name == "Chain Lightning":
-                player.lightning_staff.chain_count += 1
-            elif name == "Lightning Range":
-                player.lightning_staff.chain_range += 50
-            elif name == "Lightning Power":
-                player.lightning_staff.damage += 2
-            elif name == "Quick Zap":
-                player.lightning_staff.zap_cooldown = max(10, player.lightning_staff.zap_cooldown - 5)
-            elif name == "Thunder Strike":
-                player.lightning_staff.damage *= 2
+            if upgrade["type"] in player.lightning_staff.upgrades:
+                player.lightning_staff.upgrade(upgrade["type"])
 
     def draw_upgrade_menu(self):
         # Dark overlay behind the menu

@@ -11,8 +11,8 @@ class Sawblade:
         self.size = size
         self.speed = speed
         self.angle = 0  # Initial angle of rotation
-        self.active = True  # Add an active state
-        self.damage = 2  # Increased base damage
+        self.active = True  
+        self.damage = 2  
 
         self.vx = 0  # Velocity X
         self.vy = 0  # Velocity Y
@@ -22,7 +22,7 @@ class Sawblade:
         self.is_orbiting = is_orbiting
         self.orbit_offset = orbit_offset  # Offset from base orbit angle
         self.orbit_radius = orbit_radius if orbit_radius is not None else size
-        self.orbit_speed = 0.05  # Increased from 0.03 to 0.05 for smoother rotation
+        self.orbit_speed = 0.05  
         if is_orbiting:
             # Random speed modifier for orbiting blades cause otherwise they move in sync 
             self.orbit_speed *= random.uniform(0.9, 1.1)
@@ -31,7 +31,7 @@ class Sawblade:
         self.parent_y = y
 
 
-        sawblade_path = os.path.join("assets", "sawblade.png")  # Update image name
+        sawblade_path = os.path.join("assets", "sawblade.png")  
         self.original_image = pygame.image.load(sawblade_path).convert_alpha()  # Use convert_alpha for transparency
         self.original_image = pygame.transform.scale(self.original_image, (self.size, self.size))  # Scale to new size
         self.image = self.original_image

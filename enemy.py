@@ -5,30 +5,36 @@ import app
 
 class Enemy:
     def __init__(self, x, y, enemy_type, enemy_assets, speed=app.DEFAULT_ENEMY_SPEED, level=1):
+        # Position and movement
         self.x = x
         self.y = y
         self.speed = speed
+        self.facing_left = False
+        
+        # Animation properties
         self.frames = enemy_assets[enemy_type]
         self.frame_index = 0
         self.animation_timer = 0
         self.animation_speed = 8
         self.image = self.frames[self.frame_index]
         self.rect = self.image.get_rect(center=(self.x, self.y))
-        self.enemy_type = enemy_type
-        self.facing_left = False
-        self.knockback_dist_remaining = 0
-        self.knockback_dx = 0
-        self.knockback_dy = 0
-        self.max_health = int(12 * (1.15 ** (level - 1)))  # Store max health
-        self.health = self.max_health  # Set initial health to max
+        
+        # Combat properties
+        self.max_health = int(12 * (1.15 ** (level - 1)))
+        self.health = self.max_health
         self.level = level
+        
+        # Knockback properties
+        self.knockback_dist_remaining = 0
+        self.knockback_dx = self.knockback_dy = 0
 
     def update(self, player):
+        # Handle movement (knockback or chase player)
         if self.knockback_dist_remaining > 0:
             self.apply_knockback()
         else:
             self.move_toward_player(player)
-            self.animate()
+        self.animate()
 
     def move_toward_player(self, player):
         dx = player.x - self.x
@@ -42,7 +48,6 @@ class Enemy:
         self.facing_left = dx < 0
 
         self.rect.center = (self.x, self.y)
-        pass
 
     def apply_knockback(self):
         step = min(app.ENEMY_KNOCKBACK_SPEED, self.knockback_dist_remaining)
